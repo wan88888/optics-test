@@ -31,6 +31,15 @@ class PrepareSuiteTests(unittest.TestCase):
                         self.assertEqual(driver["url"], "http://127.0.0.1:4723")
                         self.assertEqual(caps["udid"], "CI-SIMULATOR" if platform == "ios"
                                          else "emulator-5554")
+                    if platform == "ios":
+                        self.assertTrue(caps["isHeadless"])
+                        self.assertTrue(caps["usePrebuiltWDA"])
+                        self.assertTrue(caps["showXcodeLog"])
+                        self.assertEqual(caps["derivedDataPath"], str(dest.parent / "wda-derived-data"))
+                        self.assertEqual(caps["wdaStartupRetries"], 1)
+                        self.assertLess(caps["wdaLaunchTimeout"], 300000)
+                    else:
+                        self.assertNotIn("usePrebuiltWDA", caps)
                     self.assertFalse((dest / "execution_output").exists())
                     self.assertFalse((dest / "logs").exists())
                     for folder in ("test_cases", "modules", "test_data"):

@@ -61,7 +61,14 @@ def prepare_suite(platform, destination, *, udid=None, device_name=None, platfor
         if platform == "ios":
             caps["platformVersion"] = platform_version
             caps["derivedDataPath"] = str(destination.parent / "wda-derived-data")
-            caps["wdaLaunchTimeout"] = 180000
+            # simctl already booted this simulator without a UI. Otherwise
+            # XCUITest restarts it to display Simulator during session creation.
+            caps["isHeadless"] = True
+            # ci/build_wda.sh compiles separately, outside Optics' 300s request.
+            caps["usePrebuiltWDA"] = True
+            caps["showXcodeLog"] = True
+            caps["wdaLaunchTimeout"] = 120000
+            caps["wdaStartupRetries"] = 1
 
     destination.mkdir(parents=True)
     for directory in ("test_cases", "modules", "test_data"):

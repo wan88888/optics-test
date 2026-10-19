@@ -8,6 +8,11 @@ device_udid="${OPTICS_CI_UDID:?OPTICS_CI_UDID must identify the CI device}"
 appium_pid=""
 
 cleanup() {
+  local result=$?
+  if [[ "$result" -ne 0 && -f "$suite_dir/appium.log" ]]; then
+    echo '--- Appium log tail (full log is in the run artifact) ---' >&2
+    tail -n 100 "$suite_dir/appium.log" >&2 || true
+  fi
   # Optics captures the UI before closing the app. Also retain Android's crash
   # and system logs before android-emulator-runner shuts down the emulator.
   if [[ "$platform" == android ]]; then

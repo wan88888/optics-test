@@ -24,7 +24,11 @@
 4. Web 直接运行无界面浏览器；移动端先安装应用，再启动 Appium，并轮询 `/status` 的 `ready` 字段，服务就绪后才执行测试。
 5. 发布 JUnit 并上传 `.tgz` 归档（保留 14 天）。报告含失败、解析失败或没有测试均使 job 失败。Optics 本身返回非零退出码也会使执行步骤失败。
 
+iOS 在运行用例前通过 `ci/build_wda.sh` 单独编译当前固定 XCUITest 驱动附带的 WebDriverAgent，构建步骤最多 15 分钟。Appium 使用相同 `derivedDataPath` 和 `usePrebuiltWDA: true` 运行构建产物，避免首次编译占用 Optics 的 300 秒会话创建请求。`isHeadless: true` 与 `simctl boot` 的无窗口模式一致，避免 Appium 为显示 Simulator 窗口再次重启模拟器。WDA 启动只尝试一次、最多等待 120 秒，避免默认的多次等待超过客户端时限。配置依据 [XCUITest 7.35 预构建 WDA 文档](https://appium.github.io/appium-xcuitest-driver/7.35/guides/run-prebuilt-wda/) 和 [capabilities 文档](https://appium.github.io/appium-xcuitest-driver/7.35/reference/capabilities/)。
+
 归档包含 CI 套件、JUnit、日志和截图，移动端还包含 `appium.log`。Android 在模拟器关闭前额外保存最近 2000 条 logcat 和 Activity 状态。截图名称可能含冒号，因此按照官方建议先压缩再上传。没有启用 `continue-on-error`。
+
+iOS 归档额外包含 `wda-build.log` 和 Xcode 生成的 `wda-build.xcresult`（若已生成）。启用 `showXcodeLog` 后，WDA 运行阶段的 Xcode 输出会写入 `appium.log`；移动测试失败时也会在 Actions 控制台打印 Appium 日志末尾。如果创建会话超时并伴随 `127.0.0.1:8100` 连接拒绝，应先检查 WDA 构建和启动日志；后续 `NoneType.find_elements` 是会话创建失败后的连带错误。
 
 首次登录控件超时时，先检查归档中的关闭应用前截图、页面树和 `logcat.txt`，判断是启动较慢、系统弹窗还是应用崩溃；仅凭 Activity 已启动不能证明登录界面已就绪。延长等待用于容纳云端冷启动，不能修复应用崩溃或被弹窗遮挡。Optics 的默认最终采集可能发生在应用关闭后，因此这里显式在移动端 teardown 中采集。
 
@@ -50,6 +54,7 @@ Xcode 和 iOS runtime 使用明确版本；当 GitHub 更新或移除镜像中�
 python -m unittest discover -s ci -p 'test_*.py'
 actionlint .github/workflows/optics-web.yml .github/workflows/optics-android.yml .github/workflows/optics-ios.yml
 bash -n ci/run_mobile.sh
+bash -n ci/build_wda.sh
 ```
 
 `actionlint` 是工作流语法检查工具，需单独安装。完整的 GitHub runner 环境只能在仓库 Actions 中验证；本地静态检查或本地浏览器通过，不代表云端三端已经执行通过。

@@ -78,6 +78,9 @@ jobs:
         run: |
           python ci/prepare_suite.py ios "$SUITE_DIR" \
             --udid "$OPTICS_CI_UDID" --device-name 'Optics CI iPhone' --platform-version '18.5'
+      - name: Build WebDriverAgent for the CI simulator
+        timeout-minutes: 15
+        run: bash ci/build_wda.sh "$SUITE_DIR"
       - name: Run iOS suite
         run: bash ci/run_mobile.sh ios "$SUITE_DIR" "$RUNNER_TEMP/swag-labs-ios/iOS.Simulator.SauceLabs.Mobile.Sample.app.2.7.1.app"
       - name: Remove CI simulator
