@@ -38,8 +38,12 @@ class PrepareSuiteTests(unittest.TestCase):
                         self.assertEqual(caps["derivedDataPath"], str(dest.parent / "wda-derived-data"))
                         self.assertEqual(caps["wdaStartupRetries"], 1)
                         self.assertLess(caps["wdaLaunchTimeout"], 300000)
+                        self.assertFalse(caps["connectHardwareKeyboard"])
+                        self.assertTrue(caps["forceSimulatorSoftwareKeyboardPresence"])
+                        self.assertEqual(caps["maxTypingFrequency"], 10)
                     else:
                         self.assertNotIn("usePrebuiltWDA", caps)
+                        self.assertNotIn("maxTypingFrequency", caps)
                     self.assertFalse((dest / "execution_output").exists())
                     self.assertFalse((dest / "logs").exists())
                     for folder in ("test_cases", "modules", "test_data"):

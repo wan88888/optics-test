@@ -32,6 +32,8 @@ iOS 归档额外包含 `wda-build.log` 和 Xcode 生成的 `wda-build.xcresult`�
 
 首次登录控件超时时，先检查归档中的关闭应用前截图、页面树和 `logcat.txt`，判断是启动较慢、系统弹窗还是应用崩溃；仅凭 Activity 已启动不能证明登录界面已就绪。延长等待用于容纳云端冷启动，不能修复应用崩溃或被弹窗遮挡。Optics 的默认最终采集可能发生在应用关闭后，因此这里显式在移动端 teardown 中采集。
 
+iOS CI 显式设置 `connectHardwareKeyboard: false`、`forceSimulatorSoftwareKeyboardPresence: true` 和 `maxTypingFrequency: 10`，覆盖 Optics 的硬件键盘默认值，降低云端模拟器输入丢字符的风险。iOS 登录模块在输入前先点击对应输入框。2026-10-19 的失败归档中，Appium 收到完整的 `standard_user`，但页面树和截图显示 `sndard_user`，登录页面因此提示账号密码不匹配；这种情况应检查实际输入内容，而不是增加商品页断言超时。键盘配置参考 [XCUITest capabilities](https://appium.github.io/appium-xcuitest-driver/7.35/reference/capabilities/)。
+
 CI 在临时套件目录内执行 `optics execute . --no-use-printer`，不会调用桌面窗口适配器。项目固定使用 Optics 1.11.0，其 Playwright 驱动支持 `headless: true`；官方文档中针对 1.10.5 的 `xvfb-run` 兼容方案在这里不需要。本地 `./run-tests web` 仍保持最大化、有界面和减速行为。
 
 ## 固定版本与移动应用

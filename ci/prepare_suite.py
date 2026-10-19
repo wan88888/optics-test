@@ -69,6 +69,11 @@ def prepare_suite(platform, destination, *, udid=None, device_name=None, platfor
             caps["showXcodeLog"] = True
             caps["wdaLaunchTimeout"] = 120000
             caps["wdaStartupRetries"] = 1
+            # The CI trace sent standard_user correctly, but XCTest entered
+            # sndard_user with hardware keyboard enabled and typing speed 60.
+            caps["connectHardwareKeyboard"] = False
+            caps["forceSimulatorSoftwareKeyboardPresence"] = True
+            caps["maxTypingFrequency"] = 10
 
     destination.mkdir(parents=True)
     for directory in ("test_cases", "modules", "test_data"):
