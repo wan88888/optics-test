@@ -1,0 +1,21 @@
+driver_sources:
+- appium:
+    enabled: true
+    url: http://127.0.0.1:4725
+    capabilities:
+      bundleId: com.saucelabs.SwagLabsMobileApp
+      automationName: XCUITest
+      deviceName: iPhone 15 Pro
+      udid: 1F716DF2-930A-42F0-9C6B-7D5C90E90E47
+      platformName: iOS
+      wdaLocalPort: 8100
+      platformVersion: '17.5'
+elements_sources:
+- appium_find_element:
+    enabled: true
+- appium_page_source:
+    enabled: true
+- appium_screenshot:
+    enabled: true
+file_log: true
+json_log: true

@@ -1,0 +1,7 @@
+test_case,test_step
+Swag Labs Suite Setup,Launch Swag Labs
+TC1 Swag Labs Successful Login,Verify Login Page
+TC1 Swag Labs Successful Login,Enter Valid Credentials
+TC1 Swag Labs Successful Login,Submit Login
+TC1 Swag Labs Successful Login,Verify Successful Login
+Swag Labs Suite Teardown,Close Swag Labs

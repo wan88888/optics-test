@@ -1,0 +1,9 @@
+Element_Name,Element_ID
+Username_Input,//input[@data-test='username']
+Password_Input,//input[@data-test='password']
+Login_Button,//input[@data-test='login-button']
+Products_Page,//span[@data-test='title' and normalize-space(.)='Products']
+Backpack_Item,//div[@data-test='inventory-item-name' and normalize-space(.)='Sauce Labs Backpack']
+Username,standard_user
+Password,secret_sauce
+App_URL,https://www.saucedemo.com

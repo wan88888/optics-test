@@ -1,0 +1,1 @@
+optics-framework[appium]==1.11.0

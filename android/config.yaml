@@ -1,0 +1,22 @@
+driver_sources:
+- appium:
+    enabled: true
+    url: http://127.0.0.1:4723
+    capabilities:
+      appPackage: com.swaglabsmobileapp
+      appActivity: com.swaglabsmobileapp.SplashActivity
+      appWaitActivity: com.swaglabsmobileapp.MainActivity
+      automationName: UiAutomator2
+      deviceName: TECNO BF6
+      udid: 09714153AO000853
+      platformName: Android
+      systemPort: 8200
+elements_sources:
+- appium_find_element:
+    enabled: true
+- appium_page_source:
+    enabled: true
+- appium_screenshot:
+    enabled: true
+file_log: true
+json_log: true

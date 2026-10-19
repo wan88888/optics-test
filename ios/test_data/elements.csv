@@ -1,0 +1,8 @@
+Element_Name,Element_ID
+Username_Input,test-Username
+Password_Input,test-Password
+Login_Button,test-LOGIN
+Products_Page,test-PRODUCTS
+Backpack_Item,//XCUIElementTypeStaticText[@label='Sauce Labs Backpack']
+Username,standard_user
+Password,secret_sauce

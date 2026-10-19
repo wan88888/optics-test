@@ -1,0 +1,11 @@
+module_name,module_step,param_1,param_2
+Launch Swag Labs,Launch App,,
+Verify Login Page,Assert Visibility,${Username_Input},30
+Verify Login Page,Assert Visibility,${Password_Input},30
+Verify Login Page,Assert Visibility,${Login_Button},30
+Enter Valid Credentials,Enter Text,${Username_Input},${Username}
+Enter Valid Credentials,Enter Text,${Password_Input},${Password}
+Submit Login,Press Element,${Login_Button},
+Verify Successful Login,Assert Visibility,${Products_Page},30
+Verify Successful Login,Assert Visibility,${Backpack_Item},30
+Close Swag Labs,Close And Terminate App,,

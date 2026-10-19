@@ -1,0 +1,22 @@
+# OS / editors
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Test artifacts (all platforms)
+logs/
+execution_output/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local secrets; public Swag Labs demo credentials are versioned.
+.env
+.env.*
+!.env.example

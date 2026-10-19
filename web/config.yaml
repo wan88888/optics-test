@@ -1,0 +1,17 @@
+driver_sources:
+- playwright:
+    enabled: true
+    capabilities:
+      browser: chromium
+      headless: false
+      # Applied by ./run-tests; not forwarded by the stock Optics 1.11.0 driver.
+      slow_mo: 300
+      maximize: true
+elements_sources:
+- playwright_find_element:
+    enabled: true
+- playwright_page_source:
+    enabled: true
+- playwright_screenshot:
+    enabled: true
+file_log: true

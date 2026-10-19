@@ -1,0 +1,82 @@
+name: Optics Web
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: optics-web-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ci/requirements-web.txt
+      - run: python -m pip install -r ci/requirements-web.txt
+      - name: Check CI configuration generation
+        run: python -m unittest discover -s ci -p "test_*.py"
+      - name: Validate CSV keywords and references
+        run: optics dry_run web --no-use-printer
+
+  test:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Set isolated CI paths
+        run: |
+          echo "SUITE_DIR=$RUNNER_TEMP/optics-web" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ci/requirements-web.txt
+      - run: python -m pip install -r ci/requirements-web.txt
+      - name: Install Chromium and system dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Prepare headless CI suite
+        run: python ci/prepare_suite.py web "$SUITE_DIR"
+      - name: Run Web suite
+        run: |
+          cd "$SUITE_DIR"
+          optics execute . --no-use-printer
+      - name: Publish JUnit results
+        if: always()
+        uses: mikepenz/action-junit-report@v6
+        with:
+          check_name: Optics Web results
+          report_paths: ${{ env.SUITE_DIR }}/execution_output/junit_output.xml
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          # Fork PRs and Dependabot may only have a read-only token.
+          annotate_only: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.actor == 'dependabot[bot]') }}
+      # Optics screenshot names contain colons; upload an archive instead.
+      - name: Archive logs and screenshots
+        if: always()
+        run: |
+          if [ -d "$SUITE_DIR" ]; then
+            tar -czf "$RUNNER_TEMP/optics-web-output.tgz" -C "$SUITE_DIR" .
+          fi
+      - name: Upload run output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: optics-web-output
+          path: ${{ runner.temp }}/optics-web-output.tgz
+          if-no-files-found: warn
+          retention-days: 14

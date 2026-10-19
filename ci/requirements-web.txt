@@ -1,0 +1,1 @@
+optics-framework[playwright]==1.11.0

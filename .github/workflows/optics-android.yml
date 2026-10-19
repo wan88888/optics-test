@@ -1,0 +1,107 @@
+name: Optics Android
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  checks: write
+
+concurrency:
+  group: optics-android-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ci/requirements-mobile.txt
+      - run: python -m pip install -r ci/requirements-mobile.txt
+      - name: Check CI configuration generation
+        run: python -m unittest discover -s ci -p "test_*.py"
+      - name: Validate CSV keywords and references
+        run: optics dry_run android --no-use-printer
+
+  test:
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      OPTICS_CI_UDID: emulator-5554
+    steps:
+      - name: Set isolated CI paths
+        run: |
+          echo "SUITE_DIR=$RUNNER_TEMP/optics-android" >> "$GITHUB_ENV"
+          echo "APPIUM_HOME=$RUNNER_TEMP/appium-home" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: ci/requirements-mobile.txt
+      - run: python -m pip install -r ci/requirements-mobile.txt
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Install pinned Appium and driver
+        run: |
+          npm install --global appium@2.11.3
+          appium driver install uiautomator2@2.45.1
+      - name: Enable KVM acceleration
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Download Swag Labs 2.7.1 APK
+        run: |
+          curl --fail --location --retry 3 --connect-timeout 20 --max-time 300 \
+            https://github.com/saucelabs/sample-app-mobile/releases/download/2.7.1/Android.SauceLabs.Mobile.Sample.app.2.7.1.apk \
+            --output "$RUNNER_TEMP/swag-labs.apk"
+          echo "f1793404b21e2ea29c8e203ebc1b1fd16c685d701cfb405c243bfbb520e9bce6  $RUNNER_TEMP/swag-labs.apk" | sha256sum --check -
+      - name: Prepare emulator CI suite
+        run: python ci/prepare_suite.py android "$SUITE_DIR" --udid "$OPTICS_CI_UDID"
+      - name: Run Android suite on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash ci/run_mobile.sh android "$SUITE_DIR" "$RUNNER_TEMP/swag-labs.apk"
+      - name: Publish JUnit results
+        if: always()
+        uses: mikepenz/action-junit-report@v6
+        with:
+          check_name: Optics Android results
+          report_paths: ${{ env.SUITE_DIR }}/execution_output/junit_output.xml
+          fail_on_failure: true
+          fail_on_parse_error: true
+          require_tests: true
+          # Fork PRs and Dependabot may only have a read-only token.
+          annotate_only: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.repo.fork || github.actor == 'dependabot[bot]') }}
+      # Optics screenshot names contain colons; upload an archive instead.
+      - name: Archive logs and screenshots
+        if: always()
+        run: |
+          if [ -d "$SUITE_DIR" ]; then
+            tar -czf "$RUNNER_TEMP/optics-android-output.tgz" -C "$SUITE_DIR" .
+          fi
+      - name: Upload run output
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: optics-android-output
+          path: ${{ runner.temp }}/optics-android-output.tgz
+          if-no-files-found: warn
+          retention-days: 14
