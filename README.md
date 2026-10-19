@@ -65,15 +65,11 @@ Web 使用 Ubuntu 无界面 Chromium；Android 使用 Ubuntu 的 Android 14 模�
 
 工作流先做 `dry_run` 校验，再执行测试、发布 JUnit 报告和保存压缩后的日志截图。CI 通过 `ci/prepare_suite.py` 在临时目录生成配置副本，不修改本机配置。依赖安装、iOS 模拟器应用要求及故障排查见 [CI 说明](ci/README.md)。
 
-## 数据与可选错误扫描
+## 数据
 
 官方将 `elements.csv` 定义为变量存储，表头为 `Element_Name,Element_ID`，通过 `${变量名}` 在步骤中引用；它不只存放定位器，也可以存放文本等输入值。框架按文件内容识别数据类型，不要求另外创建账号或设置文件。参见 [官方 elements.csv 说明](https://mozarkai.github.io/optics-framework/user_workflow/#elementscsv)。
 
 三端已统一将定位器和公开演示账号放回 `elements.csv`，Web 地址也在同一文件中；同一平台内变量名保持唯一。这里的账号是公开演示数据，不应将真实账号凭据提交到仓库。
-
-原有 `error_definitions.csv` 来自示例模板，是可选的页面错误文本扫描规则：定义错误编号、匹配文本、描述和严重程度。框架在结束扫描等路径中按不区分大小写的子串匹配，并可能在 JUnit 中添加失败项。它不是登录数据，也不是运行所必需的配置。
-
-当前已删除 Android/iOS 的通用模板规则。删除只取消这些额外扫描规则，不影响登录步骤和商品可见性断言；需要错误扫描时，可重新添加针对 Swag Labs 的规则。
 
 ## 并行端口
 

@@ -1,6 +1,7 @@
 """Regression checks for the local-to-CI configuration boundary."""
 
 from pathlib import Path
+import csv
 import tempfile
 import unittest
 
@@ -35,7 +36,22 @@ class PrepareSuiteTests(unittest.TestCase):
                     for folder in ("test_cases", "modules", "test_data"):
                         for source in (ROOT / platform / folder).rglob("*.csv"):
                             copied = dest / source.relative_to(ROOT / platform)
-                            self.assertEqual(source.read_bytes(), copied.read_bytes())
+                            if platform != "web" and folder == "modules":
+                                with copied.open(newline="") as stream:
+                                    rows = list(csv.DictReader(stream))
+                                # Capture must run while the failed screen and session still exist.
+                                self.assertEqual([r["module_step"] for r in rows[-3:]],
+                                                 ["Capture Screenshot", "Capture Pagesource",
+                                                  "Close And Terminate App"])
+                                login = next(r for r in rows if r["param_1"] == "${Username_Input}")
+                                self.assertEqual(login["param_2"], "120" if platform == "android" else "30")
+                                # Only the initial wait and diagnostic steps may differ.
+                                if platform == "android":
+                                    login["param_2"] = "30"
+                                with source.open(newline="") as stream:
+                                    self.assertEqual(rows[:-3] + rows[-1:], list(csv.DictReader(stream)))
+                            else:
+                                self.assertEqual(source.read_bytes(), copied.read_bytes())
         for platform, content in originals.items():
             self.assertEqual((ROOT / platform / "config.yaml").read_bytes(), content)
 

@@ -5,6 +5,23 @@ platform="$1"
 suite_dir="$2"
 app_path="$3"
 device_udid="${OPTICS_CI_UDID:?OPTICS_CI_UDID must identify the CI device}"
+appium_pid=""
+
+cleanup() {
+  # Optics captures the UI before closing the app. Also retain Android's crash
+  # and system logs before android-emulator-runner shuts down the emulator.
+  if [[ "$platform" == android ]]; then
+    adb -s "$device_udid" logcat -d -t 2000 > "$suite_dir/logcat.txt" 2>&1 || true
+    adb -s "$device_udid" shell dumpsys activity activities > "$suite_dir/activities.txt" 2>&1 || true
+  fi
+  if [[ -n "$appium_pid" ]]; then
+    kill "$appium_pid" 2>/dev/null || true
+    wait "$appium_pid" 2>/dev/null || true
+  fi
+}
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 case "$platform" in
   android) adb -s "$device_udid" install -r -g "$app_path" ;;
@@ -14,13 +31,6 @@ esac
 
 appium --address 127.0.0.1 --port 4723 > "$suite_dir/appium.log" 2>&1 &
 appium_pid=$!
-cleanup() {
-  kill "$appium_pid" 2>/dev/null || true
-  wait "$appium_pid" 2>/dev/null || true
-}
-trap cleanup EXIT
-trap 'exit 130' INT
-trap 'exit 143' TERM
 
 ready=false
 for ((attempt=0; attempt<90; attempt++)); do

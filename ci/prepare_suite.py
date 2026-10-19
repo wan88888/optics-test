@@ -1,12 +1,39 @@
 """Create a clean CI suite without changing local device/browser settings."""
 
 import argparse
+import csv
 from pathlib import Path
 import shutil
 
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def prepare_mobile_modules(path, platform):
+    """Allow a cold emulator to start and capture the screen before teardown."""
+    with path.open(newline="") as source:
+        reader = csv.DictReader(source)
+        fields = reader.fieldnames
+        rows = list(reader)
+    prepared = []
+    for row in rows:
+        if (platform == "android" and row["module_name"] == "Verify Login Page"
+                and row["module_step"] == "Assert Visibility"
+                and row["param_1"] == "${Username_Input}"):
+            # Optics 1.11.0 divides this budget between native lookup and OCR.
+            # 120 gives the native lookup up to 60 seconds on a cold CI emulator.
+            row["param_2"] = "120"
+        if row["module_step"] == "Close And Terminate App":
+            for keyword in ("Capture Screenshot", "Capture Pagesource"):
+                prepared.append({**dict.fromkeys(fields, ""),
+                                 "module_name": row["module_name"],
+                                 "module_step": keyword})
+        prepared.append(row)
+    with path.open("w", newline="") as destination:
+        writer = csv.DictWriter(destination, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(prepared)
 
 
 def prepare_suite(platform, destination, *, udid=None, device_name=None, platform_version=None):
@@ -39,6 +66,8 @@ def prepare_suite(platform, destination, *, udid=None, device_name=None, platfor
     destination.mkdir(parents=True)
     for directory in ("test_cases", "modules", "test_data"):
         shutil.copytree(source / directory, destination / directory)
+    if platform != "web":
+        prepare_mobile_modules(destination / "modules" / "modules.csv", platform)
     (destination / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=False))
     return destination
 

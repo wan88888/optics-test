@@ -20,11 +20,13 @@
 
 1. Linux 上的 `validate` job 安装对应 Optics 引擎，运行 CI 配置生成器的回归检查和 `optics dry_run`。
 2. `test` job 在自己的 runner 上安装浏览器或 Appium，准备模拟器，下载并校验移动应用。
-3. `prepare_suite.py` 只复制测试用例、模块和数据，在 `$RUNNER_TEMP` 创建全新目录，并替换本机设备信息。已存在的目标目录会被拒绝，避免旧报告混入。
+3. `prepare_suite.py` 复制测试用例、模块和数据，在 `$RUNNER_TEMP` 创建全新目录，并替换本机设备信息。移动端临时模块在关闭应用前增加截图和页面树采集；Android 首次等待用户名框的预算改为 120 秒（Optics 1.11.0 会在原生定位与 OCR 间分配预算，原生定位实际最多约 60 秒），其余断言保持 30 秒。已存在的目标目录会被拒绝，避免旧报告混入；本地用例不变。
 4. Web 直接运行无界面浏览器；移动端先安装应用，再启动 Appium，并轮询 `/status` 的 `ready` 字段，服务就绪后才执行测试。
 5. 发布 JUnit 并上传 `.tgz` 归档（保留 14 天）。报告含失败、解析失败或没有测试均使 job 失败。Optics 本身返回非零退出码也会使执行步骤失败。
 
-归档包含 CI 套件、JUnit、日志和截图，移动端还包含 `appium.log`。截图名称可能含冒号，因此按照官方建议先压缩再上传。没有启用 `continue-on-error`。
+归档包含 CI 套件、JUnit、日志和截图，移动端还包含 `appium.log`。Android 在模拟器关闭前额外保存最近 2000 条 logcat 和 Activity 状态。截图名称可能含冒号，因此按照官方建议先压缩再上传。没有启用 `continue-on-error`。
+
+首次登录控件超时时，先检查归档中的关闭应用前截图、页面树和 `logcat.txt`，判断是启动较慢、系统弹窗还是应用崩溃；仅凭 Activity 已启动不能证明登录界面已就绪。延长等待用于容纳云端冷启动，不能修复应用崩溃或被弹窗遮挡。Optics 的默认最终采集可能发生在应用关闭后，因此这里显式在移动端 teardown 中采集。
 
 CI 在临时套件目录内执行 `optics execute . --no-use-printer`，不会调用桌面窗口适配器。项目固定使用 Optics 1.11.0，其 Playwright 驱动支持 `headless: true`；官方文档中针对 1.10.5 的 `xvfb-run` 兼容方案在这里不需要。本地 `./run-tests web` 仍保持最大化、有界面和减速行为。
 

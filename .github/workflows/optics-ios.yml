@@ -73,7 +73,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/swag-labs-ios"
           ditto -x -k "$RUNNER_TEMP/swag-labs-ios.zip" "$RUNNER_TEMP/swag-labs-ios"
           test -d "$RUNNER_TEMP/swag-labs-ios/iOS.Simulator.SauceLabs.Mobile.Sample.app.2.7.1.app"
-          lipo -verify_arch x86_64 "$RUNNER_TEMP/swag-labs-ios/iOS.Simulator.SauceLabs.Mobile.Sample.app.2.7.1.app/SwagLabsMobileApp"
+          xcrun lipo "$RUNNER_TEMP/swag-labs-ios/iOS.Simulator.SauceLabs.Mobile.Sample.app.2.7.1.app/SwagLabsMobileApp" -verify_arch x86_64
       - name: Prepare simulator CI suite
         run: |
           python ci/prepare_suite.py ios "$SUITE_DIR" \
